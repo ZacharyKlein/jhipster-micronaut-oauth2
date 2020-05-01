@@ -1,19 +1,27 @@
 package io.github.jhipster.sample.security;
 
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.JWTParser;
 import io.micronaut.context.annotation.Requires;
 import io.micronaut.security.authentication.UserDetails;
 import io.micronaut.security.oauth2.configuration.OpenIdAdditionalClaimsConfiguration;
 import io.micronaut.security.oauth2.endpoint.token.response.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.inject.Named;
 import javax.inject.Singleton;
+import java.text.ParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Singleton
 @Requires(configuration = "io.micronaut.security.token.jwt")
 @Named("oidc")
 public class JHipsterOpenIdUserDetailsMapper extends DefaultOpenIdUserDetailsMapper {
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultOpenIdUserDetailsMapper.class);
+    public static final String GROUPS_CLAIM = "groups";
 
     /**
      * Default constructor.
@@ -59,8 +67,23 @@ public class JHipsterOpenIdUserDetailsMapper extends DefaultOpenIdUserDetailsMap
      */
     @Override
     protected List<String> getRoles(String providerName, OpenIdTokenResponse tokenResponse, OpenIdClaims openIdClaims) {
-
-        System.out.println(openIdClaims.getClaims());
+        String idToken = tokenResponse.getIdToken();
+        try {
+            JWTClaimsSet claimsSet = JWTParser.parse(idToken).getJWTClaimsSet();
+            Object claimObject = claimsSet.getClaim(GROUPS_CLAIM);
+            List<String> roles = new ArrayList<>();
+            if (claimObject instanceof List) {
+                List claimObjectList = (List) claimObject;
+                for (Object obj : claimObjectList) {
+                    if (obj instanceof String) {
+                        roles.add((String) obj);
+                    }
+                }
+                return roles;
+            }
+        } catch (ParseException e) {
+            LOG.error("JWT Parse exception processing id token: {}", idToken);
+        }
 
         return Collections.emptyList();
     }
