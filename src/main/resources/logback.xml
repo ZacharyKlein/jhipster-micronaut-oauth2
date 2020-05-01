@@ -43,7 +43,7 @@
     <logger name="javax.management.remote" level="WARN"/>
     <logger name="javax.xml.bind" level="WARN"/>
     <logger name="ch.qos.logback" level="WARN"/>
-    
+
     <logger name="com.ryantenney" level="WARN"/>
     <logger name="com.sun" level="WARN"/>
     <logger name="com.zaxxer" level="WARN"/>
@@ -56,6 +56,8 @@
     <logger name="org.hibernate.validator" level="WARN"/>
     <logger name="org.hibernate" level="WARN"/>
     <logger name="org.hibernate.ejb.HibernatePersistence" level="OFF"/>
+    <logger name="org.hibernate.SQL" level="DEBUG" />
+    <logger name="org.hibernate.type" level="TRACE" />
     <logger name="io.micronaut" level="WARN"/>
     <logger name="org.thymeleaf" level="WARN"/>
     <logger name="org.xnio" level="WARN"/>
@@ -65,6 +67,7 @@
     <logger name="LiquibaseSchemaResolver" level="INFO"/>
     <logger name="springfox.documentation.schema.property" level="ERROR"/>
     <logger name="sun.rmi.transport" level="WARN"/>
+    <logger name="io.micronaut.context.condition" level="TRACE"/>
 
     <!-- https://logback.qos.ch/manual/configuration.html#shutdownHook and https://jira.qos.ch/browse/LOGBACK-1090 -->
     <shutdownHook class="ch.qos.logback.core.hook.DelayingShutdownHook"/>

@@ -16,7 +16,7 @@ describe('Label e2e test', () => {
     await browser.get('/');
     navBarPage = new NavBarPage();
     signInPage = await navBarPage.getSignInPage();
-    await signInPage.autoSignInUsing('admin', 'admin');
+    await signInPage.loginWithOAuth('admin', 'admin');
     await browser.wait(ec.visibilityOf(navBarPage.entityMenu), 5000);
   });
 
