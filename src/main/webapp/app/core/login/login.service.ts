@@ -26,7 +26,7 @@ export class LoginService {
         // Okta
         logoutUrl = logoutUrl + '?id_token_hint=' + logout.idToken + '&post_logout_redirect_uri=' + redirectUri;
       }
-      window.location.href = logoutUrl;
+      //window.location.href = logoutUrl;
     });
   }
 }

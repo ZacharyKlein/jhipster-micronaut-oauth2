@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 public class JHipsterOpenIdUserDetailsMapper extends DefaultOpenIdUserDetailsMapper {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultOpenIdUserDetailsMapper.class);
     public static final String GROUPS_CLAIM = "groups";
+    public static final String ROLES_CLAIM = "roles";
 
     /**
      * Default constructor.
@@ -42,22 +43,6 @@ public class JHipsterOpenIdUserDetailsMapper extends DefaultOpenIdUserDetailsMap
         return new UserDetails(username, roles, claims);
     }
 
-//    public static List<String> extractAuthorityFromClaims(OpenIdClaims openIdClaims) {
-//        return mapRolesToGrantedAuthorities(getRolesFromClaims(openIdClaims));
-//    }
-//
-//    @SuppressWarnings("unchecked")
-//    private static Collection<String> getRolesFromClaims(OpenIdClaims claims) {
-//        return (Collection<String>) claims."groups",
-//            claims.getOrDefault("roles", new ArrayList<>()));
-//    }
-//
-//    private static List<String> mapRolesToGrantedAuthorities(Collection<String> roles) {
-//        return roles.stream()
-//            .filter(role -> role.startsWith("ROLE_"))
-//            .map(SimpleGrantedAuthority::new)
-//            .collect(Collectors.toList());
-//    }
 
     /**
      * @param providerName The OpenID provider name
@@ -69,18 +54,7 @@ public class JHipsterOpenIdUserDetailsMapper extends DefaultOpenIdUserDetailsMap
     protected List<String> getRoles(String providerName, OpenIdTokenResponse tokenResponse, OpenIdClaims openIdClaims) {
         String idToken = tokenResponse.getIdToken();
         try {
-            JWTClaimsSet claimsSet = JWTParser.parse(idToken).getJWTClaimsSet();
-            Object claimObject = claimsSet.getClaim(GROUPS_CLAIM);
-            List<String> roles = new ArrayList<>();
-            if (claimObject instanceof List) {
-                List claimObjectList = (List) claimObject;
-                for (Object obj : claimObjectList) {
-                    if (obj instanceof String) {
-                        roles.add((String) obj);
-                    }
-                }
-                return roles;
-            }
+            return extractAuthorityFromClaims(JWTParser.parse(tokenResponse.getAccessToken()).getJWTClaimsSet());
         } catch (ParseException e) {
             LOG.error("JWT Parse exception processing id token: {}", idToken);
         }
@@ -88,6 +62,24 @@ public class JHipsterOpenIdUserDetailsMapper extends DefaultOpenIdUserDetailsMap
         return Collections.emptyList();
     }
 
+    public static List<String> extractAuthorityFromClaims(JWTClaimsSet claimsSet) {
+        Object claimObject = claimsSet.getClaim(GROUPS_CLAIM);
+        if (claimObject == null) {
+            claimObject = claimsSet.getClaim(ROLES_CLAIM);
+        }
+
+        return mapRolesToGrantedAuthorities(getRolesFromClaims(claimObject));
+    }
+    @SuppressWarnings("unchecked")
+    private static Collection<String> getRolesFromClaims(Object claims) {
+        return (Collection<String>) claims;
+    }
+
+    private static List<String> mapRolesToGrantedAuthorities(Collection<String> roles) {
+        return roles.stream()
+            .filter(role -> role.startsWith("ROLE_"))
+            .collect(Collectors.toList());
+    }
 
     /**
      * @param providerName The OpenID provider name
