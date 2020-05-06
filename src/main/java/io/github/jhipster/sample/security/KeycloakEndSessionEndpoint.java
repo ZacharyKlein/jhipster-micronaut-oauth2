@@ -1,18 +1,17 @@
 package io.github.jhipster.sample.security;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.micronaut.http.HttpRequest;
+import io.micronaut.http.server.util.HttpHostResolver;
+import io.micronaut.http.uri.UriBuilder;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.oauth2.client.OpenIdProviderMetadata;
-import io.micronaut.security.oauth2.configuration.OauthClientConfiguration;
-import io.micronaut.security.oauth2.endpoint.endsession.request.AbstractEndSessionRequest;
-import io.micronaut.security.oauth2.endpoint.endsession.response.EndSessionCallbackUrlBuilder;
-import io.micronaut.security.oauth2.endpoint.token.response.OpenIdUserDetailsMapper;
+import io.micronaut.security.oauth2.configuration.endpoints.EndSessionConfiguration;
+import io.micronaut.security.oauth2.endpoint.endsession.request.EndSessionEndpoint;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Supplier;
+import java.net.URI;
 
 /**
  * Provides specific configuration to logout from Okta.
@@ -24,54 +23,32 @@ import java.util.function.Supplier;
  */
 @Named("oidc")
 @Singleton
-public class KeycloakEndSessionEndpoint extends AbstractEndSessionRequest {
+public class KeycloakEndSessionEndpoint implements EndSessionEndpoint {
 
-    private static final String PARAM_POST_LOGOUT_REDIRECT_URI = "post_logout_redirect_uri";
-    private static final String PARAM_ID_TOKEN_HINT = "id_token_hint";
+    public static final String PARAM_REDIRECT_URI = "redirect_uri";
+    private final OpenIdProviderMetadata openIdProviderMetadata;
+    private final EndSessionConfiguration endSessionConfiguration;
+    private final HttpHostResolver httpHostResolver;
 
-    /**
-     * @deprecated use {@link #KeycloakEndSessionEndpoint(EndSessionCallbackUrlBuilder, OauthClientConfiguration, Supplier)} instead.
-     * @param endSessionCallbackUrlBuilder The end session callback URL builder
-     * @param clientConfiguration The client configuration
-     * @param providerMetadata The provider metadata
-     */
-    @Deprecated
-    public KeycloakEndSessionEndpoint(EndSessionCallbackUrlBuilder endSessionCallbackUrlBuilder,
-                                  OauthClientConfiguration clientConfiguration,
-                                  OpenIdProviderMetadata providerMetadata) {
-        super(endSessionCallbackUrlBuilder, clientConfiguration, providerMetadata);
+    public KeycloakEndSessionEndpoint(@Named("oidc") OpenIdProviderMetadata openIdProviderMetadata,
+                                      EndSessionConfiguration endSessionConfiguration,
+                                      HttpHostResolver httpHostResolver) {
+        this.openIdProviderMetadata = openIdProviderMetadata;
+        this.endSessionConfiguration = endSessionConfiguration;
+        this.httpHostResolver = httpHostResolver;
     }
 
-    /**
-     * @param endSessionCallbackUrlBuilder The end session callback URL builder
-     * @param clientConfiguration The client configuration
-     * @param providerMetadata The provider metadata supplier
-     */
-    public KeycloakEndSessionEndpoint(EndSessionCallbackUrlBuilder endSessionCallbackUrlBuilder,
-                                  OauthClientConfiguration clientConfiguration,
-                                  Supplier<OpenIdProviderMetadata> providerMetadata) {
-        super(endSessionCallbackUrlBuilder, clientConfiguration, providerMetadata);
-    }
-
+    @Nullable
     @Override
-    protected String getUrl() {
-        System.out.println("getUrl: " + providerMetadataSupplier.get().getEndSessionEndpoint());
-        return providerMetadataSupplier.get().getEndSessionEndpoint();
-    }
-
-    @Override
-    protected Map<String, Object> getArguments(HttpRequest originating,
-                                               Authentication authentication) {
-        System.out.println("getArguments: " + originating.getUri().toString());
-        Map<String, Object> attributes = authentication.getAttributes();
-        Map<String, Object> arguments = new HashMap<>();
-        if (attributes.containsKey(OpenIdUserDetailsMapper.OPENID_TOKEN_KEY)) {
-            arguments.put(PARAM_ID_TOKEN_HINT, attributes.get(OpenIdUserDetailsMapper.OPENID_TOKEN_KEY));
+    public String getUrl(HttpRequest originating, Authentication authentication) {
+        if (openIdProviderMetadata.getEndSessionEndpoint() == null) {
+            return null;
         }
-        arguments.put(PARAM_POST_LOGOUT_REDIRECT_URI, getRedirectUri(originating));
-        return arguments;
+        return UriBuilder.of(URI.create(openIdProviderMetadata.getEndSessionEndpoint()))
+            .queryParam(PARAM_REDIRECT_URI, httpHostResolver.resolve(originating) + endSessionConfiguration.getRedirectUri())
+            .build()
+            .toString();
     }
-
 }
 
 

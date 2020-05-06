@@ -45,18 +45,14 @@ micronaut:
       login-uri: /oauth2/authorization{/provider}
       callback-uri: /login/oauth2/code{/provider}
       openid:
-        logout-uri: /api/logout
         end-session:
-          redirect-uri: http://localhost:9000
+          redirect-uri: /api/logout
       clients:
         oidc:
           client-secret: web_app
           client-id: web_app
           openid:
             issuer: http://localhost:9080/auth/realms/jhipster
-            end-session:
-              enabled: true
-              url: http://localhost:9080/auth/realms/jhipster/protocol/openid-connect/logout
     endpoints:
       login:
         enabled: true
