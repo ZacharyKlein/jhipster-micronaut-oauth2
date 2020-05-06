@@ -10,6 +10,6 @@ export class AuthServerProvider {
   constructor(private http: HttpClient) {}
 
   logout(): Observable<Logout> {
-    return this.http.post<Logout>(SERVER_API_URL + 'api/logout', {});
+    return this.http.get<Logout>(SERVER_API_URL + 'api/logout', {});
   }
 }
