@@ -28,19 +28,21 @@ class OperationGatlingTest extends Simulation {
         .connectionHeader("keep-alive")
         .userAgentHeader("Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:33.0) Gecko/20100101 Firefox/33.0")
         .silentResources // Silence all resources like css or css so they don't clutter the results
+        .disableFollowRedirect // We must follow redirects manually to get the xsrf token from the keycloak redirect
+        .disableAutoReferer
 
     val headers_http = Map(
         "Accept" -> """application/json"""
     )
 
-    val headers_http_authentication = Map(
-        "Content-Type" -> """application/json""",
-        "Accept" -> """application/json"""
-    )
-
     val headers_http_authenticated = Map(
         "Accept" -> """application/json""",
-        "Authorization" -> "${access_token}"
+        "X-XSRF-TOKEN" -> "${xsrf_token}"
+    )
+
+    val keycloakHeaders = Map(
+        "Accept" -> "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Upgrade-Insecure-Requests" -> "1"
     )
 
     val scn = scenario("Test the Operation entity")
@@ -48,13 +50,40 @@ class OperationGatlingTest extends Simulation {
         .get("/api/account")
         .headers(headers_http)
         .check(status.is(401))
+        .check(headerRegex("Set-Cookie", "XSRF-TOKEN=(.*);[\\s]").saveAs("xsrf_token"))
         ).exitHereIfFailed
         .pause(10)
         .exec(http("Authentication")
-        .post("/api/authenticate")
-        .headers(headers_http_authentication)
-        .body(StringBody("""{"username":"admin", "password":"admin"}""")).asJson
-        .check(header("Authorization").saveAs("access_token"))).exitHereIfFailed
+        .get("/oauth2/authorization/oidc")
+        .check(status.is(302))
+        .check(header("Location").saveAs("loginUrl"))).exitHereIfFailed
+        .pause(2)
+        .exec(http("Login Redirect")
+        .get("${loginUrl}")
+        .silent
+        .headers(keycloakHeaders)
+        .check(css("#kc-form-login", "action").saveAs("kc-form-login"))).exitHereIfFailed
+        .pause(10)
+        .exec(http("Authenticate")
+        .post("${kc-form-login}")
+        .silent
+        .headers(keycloakHeaders)
+        .formParam("username", "admin")
+        .formParam("password", "admin")
+        .formParam("submit", "Login")
+        .check(status.is(302))
+        .check(header("Location").saveAs("afterLoginUrl"))).exitHereIfFailed
+        .pause(2)
+        .exec(http("After Login Redirect")
+        .get("${afterLoginUrl}")
+        .silent
+        .check(status.is(302))
+        .check(header("Location").saveAs("finalRedirectUrl"))
+        .check(headerRegex("Set-Cookie", "XSRF-TOKEN=(.*);[\\s]").saveAs("xsrf_token")))
+        .exec(http("Final Redirect")
+        .get("${finalRedirectUrl}")
+        .silent
+        .check(status.is(200))).exitHereIfFailed
         .pause(2)
         .exec(http("Authenticated request")
         .get("/api/account")

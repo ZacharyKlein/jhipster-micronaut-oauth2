@@ -42,22 +42,6 @@ describe('administration', () => {
     expect(value1).to.eq(expect1);
   });
 
-  it('should load audits', async () => {
-    await navBarPage.clickOnAdmin('audits');
-    await browser.sleep(500);
-    const expect1 = 'audits.title';
-    const value1 = await element(by.id('audits-page-heading')).getAttribute('jhiTranslate');
-    expect(value1).to.eq(expect1);
-  });
-
-  it('should load logs', async () => {
-    await navBarPage.clickOnAdmin('logs');
-    await browser.sleep(500);
-    const expect1 = 'logs.title';
-    const value1 = await element(by.id('logs-page-heading')).getAttribute('jhiTranslate');
-    expect(value1).to.eq(expect1);
-  });
-
   after(async () => {
     await navBarPage.autoSignOut();
   });

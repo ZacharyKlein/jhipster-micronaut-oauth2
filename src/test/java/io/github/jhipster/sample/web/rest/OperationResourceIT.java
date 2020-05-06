@@ -1,6 +1,7 @@
 package io.github.jhipster.sample.web.rest;
 
 
+import io.github.jhipster.sample.config.TestSecurityConfiguration;
 import io.github.jhipster.sample.domain.Operation;
 import io.github.jhipster.sample.repository.OperationRepository;
 
