@@ -42,7 +42,6 @@ micronaut:
     enabled: true
     oauth2:
       enabled: true
-      callback-uri: /login/oauth2/code{/provider}
       clients:
         oidc:
           client-secret: web_app
@@ -50,17 +49,12 @@ micronaut:
           openid:
             issuer: http://localhost:9080/auth/realms/jhipster
     endpoints:
-      login:
-        enabled: true
-        path: /api/authenticate
       logout:
         enabled: true
-        path: /api/logout
+        get-allowed: true
     token:
       jwt:
         enabled: true
-        bearer:
-          enabled: true
         cookie:
           enabled: true
     intercept-url-map:
